@@ -1,0 +1,98 @@
+*{
+    font-family: sans-serif;
+    box-sizing: border-box;
+}
+
+.body{
+    height: 100vh;
+    /* background-image: linear-gradient(97deg, #5800FF -3%, #00D7FF 50%, #7A4495 97%); */
+    background-image: linear-gradient(97deg, #201c22 27%, #6d797c 79%, #020102 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.code-editor{
+    width: 90vw;
+    height: 90vh;
+    background-color: #ffffff;
+    border-radius: 1rem;
+    overflow: hidden;
+
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+}
+.code{
+    background-color: #262627;
+    padding: 1rem;
+    border-radius: 0 1rem 1rem 0;
+    display: grid;
+    grid-template-rows: repeat(3, 1fr);
+    overflow-y: auto;
+}
+h1 > img{
+    width: 1.3rem;
+    margin-right: 1rem;
+    vertical-align: middle;
+}
+h1{
+    font: 600 1.2rem sans-serif;
+    margin: 1rem 0;
+    color: #ffffff;
+}
+.code textarea{
+    width: 100%;
+    background-color: #3e3c42;
+    height: calc(100% - 4rem);
+    border: none;
+    padding: 1rem;
+    font-size: 1rem;
+    color: #f5f8f8;
+    resize: vertical;
+}
+.code textarea::-webkit-scrollbar{
+    width: .4rem;
+}
+.code textarea::-webkit-scrollbar-thumb{
+
+    background-color: #FF8FB1;
+    border-radius: .4rem;
+}
+#result{
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+#htmlCode{
+    position: relative;
+}
+#htmlCode #suggestion{
+    width: 50px;
+    height: 50px;
+    background-color: #ffffff7a;
+    position: absolute;
+    border-radius: 0.4rem;
+    top: 0;
+    right: 10px;
+    display: none;
+}
+/* .body img{
+    height: 30px;
+} */
+
+
+.fullscreen{
+    transition: position 1s ease;
+    position: fixed;
+    width: 100%;
+    height: 80vh;
+    right: 0;
+    top: 20px;
+    background-color: #ffffff;
+}
+#fullscreenToggle{
+    
+    position: absolute;
+    right: 3px;
+    top: 3px;
+    z-index: 999;
+}

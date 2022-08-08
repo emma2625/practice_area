@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Editor Project</title>
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/fonticons/css/all.css">
+    <link rel="stylesheet" href="assets/css/animate.css">
+</head>
+<body>
+    <section class="body">
+        <div class="code-editor">
+            <div class="code">
+                <div id="htmlCode">
+                    <h1><img src="assets/img/html.png" alt="">HTML</h1>
+                    <textarea name="" id="htmlEditor"></textarea>
+                    <div id="suggestion"></div>
+                </div>
+                <div id="cssCode">
+                    <h1><img src="assets/img/css.png" alt="">CSS</h1>
+                    <textarea name="" id="cssEditor"></textarea>
+                </div>
+                <div id="jsCode">
+                    <h1><img src="assets/img/js.png" alt="">JS</h1>
+                    <textarea name="" id="jsEditor"></textarea>
+                </div>
+            </div>
+           
+            <div>
+                <button class="btn btn-secondary" id="fullscreenToggle"><i id="fullIcon" class="fas fa-search-plus"></i></button>
+                <iframe id="result" class="animate__animated"></iframe>
+            </div>
+
+        </div>
+    </section>
+
+
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
