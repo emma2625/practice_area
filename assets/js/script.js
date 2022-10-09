@@ -12,22 +12,17 @@ function run(){
     localStorage.setItem("html_code", html_code.value);
     localStorage.setItem("css_code", css_code.value);
     localStorage.setItem("js_code", js_code.value);
-    if (htmlTags.includes(html_code.value)) {
-        console.log(`<${html_code.value}></${html_code.value}>`);
-       suggestion.style.display = 'block';
-       let  newBtn = document.createElement("button");
-
-        newBtn.innerText = html_code.value.split('').pop()
-        newBtn.classList.add('btn','btn-primary','w-100','h-100');
-        newBtn.setAttribute('id','suggestBtn')
-        suggestion.appendChild(newBtn);
-    }
+    
 
     result.contentDocument.body.innerHTML = `<style>${localStorage.css_code}</style>` + localStorage.html_code;
     try {
         result.contentWindow.eval(localStorage.js_code) 
     } catch (error) {
-        alert(error)
+        console.log(error);
+
+        setTimeout(()=>{
+            console.clear();
+        },5000)
     }
 }
 
@@ -41,9 +36,16 @@ html_code.addEventListener('keyup',()=> run())
 css_code.addEventListener('keyup',()=> run())
 js_code.addEventListener('keyup',()=> run())
 
-html_code.value = localStorage.html_code
-css_code.value = localStorage.css_code
-js_code.value = localStorage.js_code
+// Check if there is any code saved on the local storage
+if (localStorage.html_code != 'undefined') {
+    html_code.value = localStorage.html_code  
+}
+if (localStorage.css_code != 'undefined') {
+    css_code.value = localStorage.css_code
+}
+if (localStorage.js_code != 'undefined') {
+    js_code.value = localStorage.js_code
+}
 
 window.onload = ()=> run()
 
