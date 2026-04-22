@@ -4,40 +4,464 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Editor Project</title>
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/fonticons/css/all.css">
-    <link rel="stylesheet" href="assets/css/animate.css">
+    <title>DevPad — Code Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'monospace'],
+                        display: ['Syne', 'sans-serif'],
+                    },
+                    colors: {
+                        void: '#0a0a0f',
+                        panel: '#10101a',
+                        surface: '#16162a',
+                        card: '#1c1c30',
+                        border: '#2a2a45',
+                        accent: '#7c6aff',
+                        'accent-hot': '#ff6a9b',
+                        'accent-cool': '#6af0ff',
+                        'accent-warm': '#ffb86a',
+                        muted: '#4a4a6a',
+                        soft: '#8888aa',
+                        bright: '#e8e8ff',
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'fade-in': 'fadeIn 0.3s ease',
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                    },
+                    keyframes: {
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: 0 }, '100%': { transform: 'translateY(0)', opacity: 1 } },
+                        fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+                        pulseGlow: { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.5 } },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'JetBrains Mono', monospace; background: #0a0a0f; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #7c6aff55; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #7c6aff; }
+
+        /* Textarea code styling */
+        .code-area {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            tab-size: 2;
+            resize: none;
+            outline: none;
+            caret-color: #7c6aff;
+        }
+        .code-area:focus { box-shadow: inset 0 0 0 1px #7c6aff44; }
+
+        /* Panel glow top border */
+        .panel-glow-html { border-top: 2px solid #ff6a9b; }
+        .panel-glow-css { border-top: 2px solid #7c6aff; }
+        .panel-glow-js { border-top: 2px solid #ffb86a; }
+
+        /* Tab active state */
+        .tab-active { background: #1c1c30; color: #e8e8ff; }
+        .tab-active::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: #7c6aff;
+        }
+
+        /* Result iframe */
+        #result {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* Fullscreen result */
+        #result.fullscreen {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            border-radius: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Noise texture overlay */
+        .noise::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            border-radius: inherit;
+        }
+
+        /* Mobile tab panel */
+        .mobile-panel { display: none; }
+        .mobile-panel.active { display: flex; }
+
+        /* Status dot */
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 6px #22c55e;
+            animation: pulseGlow 2s infinite;
+        }
+
+        /* Gutter line numbers effect */
+        .gutter-line { 
+            display: flex; 
+            gap: 0; 
+        }
+
+        /* Resize handle */
+        .resize-handle {
+            cursor: col-resize;
+            width: 6px;
+            background: #2a2a45;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .resize-handle:hover { background: #7c6aff66; }
+        .resize-handle::after {
+            content: '⋮';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #4a4a6a;
+            font-size: 16px;
+            writing-mode: vertical-lr;
+            letter-spacing: -4px;
+        }
+
+        @media (max-width: 768px) {
+            .desktop-layout { display: none !important; }
+            .mobile-layout { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+            .desktop-layout { display: flex !important; }
+            .mobile-layout { display: none !important; }
+        }
+    </style>
 </head>
-<body>
-    <section class="body">
-        <div class="code-editor">
-            <div class="code">
-                <div id="htmlCode">
-                    <h1><img src="assets/img/html.png" alt="">HTML</h1>
-                    <textarea name="" id="htmlEditor"></textarea>
-                    <div id="suggestion"></div>
-                </div>
-                <div id="cssCode">
-                    <h1><img src="assets/img/css.png" alt="">CSS</h1>
-                    <textarea name="" id="cssEditor"></textarea>
-                </div>
-                <div id="jsCode">
-                    <h1><img src="assets/img/js.png" alt="">JS</h1>
-                    <textarea name="" id="jsEditor"></textarea>
-                </div>
-            </div>
-           
-            <div>
-                <button class="btn btn-secondary" id="fullscreenToggle"><i id="fullIcon" class="fas fa-search-plus"></i></button>
-                <iframe id="result" class="animate__animated"></iframe>
-            </div>
+<body class="bg-void min-h-screen flex flex-col overflow-hidden">
 
+    <!-- Top Bar -->
+    <header class="flex items-center justify-between px-5 py-3 border-b border-border bg-panel shrink-0 z-10">
+        <div class="flex items-center gap-3">
+            <!-- Logo -->
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-md bg-accent flex items-center justify-center">
+                    <i class="fas fa-code text-white text-xs"></i>
+                </div>
+                <span class="font-display text-bright font-bold text-lg tracking-tight">DevPad</span>
+            </div>
+            <!-- Status -->
+            <div class="flex items-center gap-1.5 ml-2 bg-surface rounded-full px-3 py-1">
+                <div class="status-dot"></div>
+                <span class="text-xs text-soft font-mono">live preview</span>
+            </div>
         </div>
-    </section>
 
+        <div class="flex items-center gap-2">
+            <!-- Run button -->
+            <button id="runBtn" onclick="run()" class="flex items-center gap-2 bg-accent hover:bg-accent/90 text-white text-xs font-mono font-medium px-4 py-2 rounded-lg transition-all hover:shadow-lg hover:shadow-accent/20 active:scale-95">
+                <i class="fas fa-play text-xs"></i>
+                <span>Run</span>
+            </button>
+            <!-- Fullscreen -->
+            <button id="fullscreenToggle" class="w-8 h-8 rounded-lg bg-surface hover:bg-card border border-border text-soft hover:text-bright transition-all flex items-center justify-center">
+                <i id="fullIcon" class="fas fa-expand text-xs"></i>
+            </button>
+        </div>
+    </header>
 
-    <script src="assets/js/script.js"></script>
+    <!-- Mobile Tab Bar -->
+    <div class="mobile-layout hidden shrink-0 border-b border-border bg-panel">
+        <div class="flex w-full">
+            <button onclick="switchTab('html')" id="tab-html" class="flex-1 py-2.5 text-xs font-mono font-medium text-accent-hot border-b-2 border-accent-hot bg-card transition-all">
+                <i class="fab fa-html5 mr-1"></i>HTML
+            </button>
+            <button onclick="switchTab('css')" id="tab-css" class="flex-1 py-2.5 text-xs font-mono font-medium text-soft hover:text-accent border-b-2 border-transparent hover:border-accent transition-all">
+                <i class="fab fa-css3-alt mr-1"></i>CSS
+            </button>
+            <button onclick="switchTab('js')" id="tab-js" class="flex-1 py-2.5 text-xs font-mono font-medium text-soft hover:text-accent-warm border-b-2 border-transparent hover:border-accent-warm transition-all">
+                <i class="fab fa-js mr-1"></i>JS
+            </button>
+            <button onclick="switchTab('preview')" id="tab-preview" class="flex-1 py-2.5 text-xs font-mono font-medium text-soft hover:text-accent-cool border-b-2 border-transparent hover:border-accent-cool transition-all">
+                <i class="fas fa-eye mr-1"></i>Preview
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <main class="flex-1 overflow-hidden flex flex-col">
+
+        <!-- Desktop Layout -->
+        <div class="desktop-layout h-full flex">
+            <!-- Editors Column -->
+            <div id="editorsCol" class="flex flex-col overflow-hidden" style="width: 50%; min-width: 200px;">
+                
+                <!-- HTML Editor -->
+                <div class="flex flex-col panel-glow-html bg-panel border-r border-border" style="flex: 1; min-height: 0;">
+                    <div class="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-accent-hot"></span>
+                            <span class="text-xs font-mono font-semibold text-accent-hot">HTML</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-muted text-xs font-mono">
+                            <span id="html-lines">0 lines</span>
+                        </div>
+                    </div>
+                    <textarea id="htmlEditor" class="code-area flex-1 bg-panel text-bright px-5 py-4 text-[13px] w-full overflow-auto" placeholder="<!-- Write your HTML here -->" spellcheck="false"></textarea>
+                </div>
+
+                <!-- CSS Editor -->
+                <div class="flex flex-col panel-glow-css bg-panel border-r border-border border-t border-border/60" style="flex: 1; min-height: 0;">
+                    <div class="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-accent"></span>
+                            <span class="text-xs font-mono font-semibold text-accent">CSS</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-muted text-xs font-mono">
+                            <span id="css-lines">0 lines</span>
+                        </div>
+                    </div>
+                    <textarea id="cssEditor" class="code-area flex-1 bg-panel text-bright px-5 py-4 text-[13px] w-full overflow-auto" placeholder="/* Write your CSS here */" spellcheck="false"></textarea>
+                </div>
+
+                <!-- JS Editor -->
+                <div class="flex flex-col panel-glow-js bg-panel border-r border-border border-t border-border/60" style="flex: 1; min-height: 0;">
+                    <div class="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-accent-warm"></span>
+                            <span class="text-xs font-mono font-semibold text-accent-warm">JS</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-muted text-xs font-mono">
+                            <span id="js-lines">0 lines</span>
+                        </div>
+                    </div>
+                    <textarea id="jsEditor" class="code-area flex-1 bg-panel text-bright px-5 py-4 text-[13px] w-full overflow-auto" placeholder="// Write your JavaScript here" spellcheck="false"></textarea>
+                </div>
+
+            </div>
+
+            <!-- Resize Handle -->
+            <div class="resize-handle" id="resizeHandle"></div>
+
+            <!-- Preview Column -->
+            <div id="previewCol" class="flex flex-col flex-1 bg-card" style="min-width: 200px;">
+                <!-- Preview header -->
+                <div class="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface shrink-0">
+                    <div class="flex items-center gap-2">
+                        <div class="flex gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500/70"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-yellow-400/70"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-green-400/70"></span>
+                        </div>
+                        <span class="text-xs font-mono text-muted ml-2">preview</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-muted text-xs font-mono">
+                        <i class="fas fa-circle-dot text-green-400 text-[8px]"></i>
+                        <span>live</span>
+                    </div>
+                </div>
+                <iframe id="result" class="flex-1 bg-white"></iframe>
+            </div>
+        </div>
+
+        <!-- Mobile Layout -->
+        <div class="mobile-layout hidden flex-col h-full">
+            <!-- HTML Panel -->
+            <div id="mobile-html" class="mobile-panel active flex-col flex-1 overflow-hidden">
+                <textarea id="htmlEditorMobile" class="code-area flex-1 bg-panel text-bright px-4 py-4 text-[13px] w-full overflow-auto" placeholder="<!-- Write your HTML here -->" spellcheck="false"></textarea>
+            </div>
+            <!-- CSS Panel -->
+            <div id="mobile-css" class="mobile-panel flex-col flex-1 overflow-hidden">
+                <textarea id="cssEditorMobile" class="code-area flex-1 bg-panel text-bright px-4 py-4 text-[13px] w-full overflow-auto" placeholder="/* Write your CSS here */" spellcheck="false"></textarea>
+            </div>
+            <!-- JS Panel -->
+            <div id="mobile-js" class="mobile-panel flex-col flex-1 overflow-hidden">
+                <textarea id="jsEditorMobile" class="code-area flex-1 bg-panel text-bright px-4 py-4 text-[13px] w-full overflow-auto" placeholder="// Write your JavaScript here" spellcheck="false"></textarea>
+            </div>
+            <!-- Preview Panel -->
+            <div id="mobile-preview" class="mobile-panel flex-col flex-1 overflow-hidden">
+                <iframe id="resultMobile" class="flex-1 bg-white w-full border-0"></iframe>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Status Bar -->
+    <footer class="shrink-0 flex items-center justify-between px-5 py-1.5 bg-accent/10 border-t border-accent/20">
+        <div class="flex items-center gap-4 text-[11px] font-mono text-muted">
+            <span><i class="fas fa-keyboard mr-1"></i>Auto-save on</span>
+            <span id="cursor-pos">Ln 1, Col 1</span>
+        </div>
+        <div class="text-[11px] font-mono text-accent/60">DevPad v2.0</div>
+    </footer>
+
+    <script>
+        // ─── Core refs ───────────────────────────────────────────────────────
+        const htmlEditor = document.querySelector("#htmlEditor");
+        const cssEditor  = document.querySelector("#cssEditor");
+        const jsEditor   = document.querySelector("#jsEditor");
+        const result     = document.querySelector("#result");
+
+        // ─── Line counter ─────────────────────────────────────────────────────
+        function updateLineCount(textarea, id) {
+            const lines = textarea.value.split('\n').length;
+            document.getElementById(id).textContent = lines + (lines === 1 ? ' line' : ' lines');
+        }
+
+        // ─── Run ──────────────────────────────────────────────────────────────
+        function run() {
+            const html = htmlEditor.value;
+            const css  = cssEditor.value;
+            const js   = jsEditor.value;
+
+            // Persist
+            try {
+                localStorage.setItem("html_code", html);
+                localStorage.setItem("css_code", css);
+                localStorage.setItem("js_code", js);
+            } catch(e) {}
+
+            const doc = result.contentDocument || result.contentWindow.document;
+            doc.open();
+            doc.write(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}<script>${js}<\/script></body></html>`);
+            doc.close();
+
+            // Also update mobile preview if exists
+            const mResult = document.querySelector("#resultMobile");
+            if (mResult) {
+                const d = mResult.contentDocument || mResult.contentWindow.document;
+                d.open();
+                d.write(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}<script>${js}<\/script></body></html>`);
+                d.close();
+            }
+        }
+
+        // ─── Tab key support ──────────────────────────────────────────────────
+        [htmlEditor, cssEditor, jsEditor].forEach(ta => {
+            ta.addEventListener('keydown', e => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const s = ta.selectionStart, end = ta.selectionEnd;
+                    ta.value = ta.value.substring(0, s) + '  ' + ta.value.substring(end);
+                    ta.selectionStart = ta.selectionEnd = s + 2;
+                }
+            });
+        });
+
+        // ─── Live update ──────────────────────────────────────────────────────
+        htmlEditor.addEventListener('input', () => { run(); updateLineCount(htmlEditor, 'html-lines'); });
+        cssEditor.addEventListener('input',  () => { run(); updateLineCount(cssEditor,  'css-lines'); });
+        jsEditor.addEventListener('input',   () => { run(); updateLineCount(jsEditor,   'js-lines'); });
+
+        // ─── Cursor position ─────────────────────────────────────────────────
+        [htmlEditor, cssEditor, jsEditor].forEach(ta => {
+            ta.addEventListener('keyup', () => {
+                const lines = ta.value.substr(0, ta.selectionStart).split('\n');
+                document.getElementById('cursor-pos').textContent =
+                    `Ln ${lines.length}, Col ${lines[lines.length - 1].length + 1}`;
+            });
+        });
+
+        // ─── Restore from localStorage ───────────────────────────────────────
+        try {
+            const h = localStorage.getItem("html_code");
+            const c = localStorage.getItem("css_code");
+            const j = localStorage.getItem("js_code");
+            if (h && h !== 'undefined') htmlEditor.value = h;
+            if (c && c !== 'undefined') cssEditor.value  = c;
+            if (j && j !== 'undefined') jsEditor.value   = j;
+        } catch(e) {}
+
+        updateLineCount(htmlEditor, 'html-lines');
+        updateLineCount(cssEditor,  'css-lines');
+        updateLineCount(jsEditor,   'js-lines');
+
+        window.addEventListener('load', () => run());
+
+        // ─── Fullscreen ───────────────────────────────────────────────────────
+        const fullscreenToggle = document.querySelector("#fullscreenToggle");
+        const fullIcon = document.querySelector("#fullIcon");
+        fullscreenToggle.addEventListener('click', () => {
+            result.classList.toggle('fullscreen');
+            if (result.classList.contains('fullscreen')) {
+                fullIcon.className = 'fas fa-compress text-xs';
+            } else {
+                fullIcon.className = 'fas fa-expand text-xs';
+            }
+        });
+
+        // ─── Resize handle ────────────────────────────────────────────────────
+        const handle = document.getElementById('resizeHandle');
+        const editorsCol = document.getElementById('editorsCol');
+        const previewCol = document.getElementById('previewCol');
+        let isResizing = false;
+
+        handle.addEventListener('mousedown', e => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+        document.addEventListener('mousemove', e => {
+            if (!isResizing) return;
+            const container = editorsCol.parentElement;
+            const rect = container.getBoundingClientRect();
+            const newW = e.clientX - rect.left;
+            const total = rect.width;
+            const pct = Math.min(Math.max(newW / total * 100, 20), 80);
+            editorsCol.style.width = pct + '%';
+        });
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+
+        // ─── Mobile tabs ─────────────────────────────────────────────────────
+        function switchTab(tab) {
+            ['html','css','js','preview'].forEach(t => {
+                document.getElementById('mobile-' + t).classList.remove('active');
+                const btn = document.getElementById('tab-' + t);
+                if (btn) {
+                    btn.classList.remove('text-accent-hot','text-accent','text-accent-warm','text-accent-cool','border-accent-hot','border-accent','border-accent-warm','border-accent-cool');
+                    btn.classList.add('text-soft','border-transparent');
+                }
+            });
+            document.getElementById('mobile-' + tab).classList.add('active');
+            const colors = { html: ['text-accent-hot','border-accent-hot'], css: ['text-accent','border-accent'], js: ['text-accent-warm','border-accent-warm'], preview: ['text-accent-cool','border-accent-cool'] };
+            const btn = document.getElementById('tab-' + tab);
+            if (btn) {
+                btn.classList.remove('text-soft','border-transparent');
+                btn.classList.add(...colors[tab]);
+            }
+        }
+
+        // ─── Keyboard shortcut: Ctrl+Enter to run ────────────────────────────
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+        });
+    </script>
 </body>
 </html>
